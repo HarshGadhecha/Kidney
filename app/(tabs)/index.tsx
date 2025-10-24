@@ -20,6 +20,7 @@ import { router } from 'expo-router';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { AdBanner } from '@/components/ads/BannerAd';
 import { Colors, Spacing, Typography } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { initDatabase } from '@/lib/database';
@@ -141,6 +142,13 @@ export default function HomeScreen() {
               </View>
             </Card>
           </Animated.View>
+
+          {/* Ad Banner */}
+          {!isPremium && (
+            <Animated.View entering={FadeInDown.delay(850)}>
+              <AdBanner style={styles.adBanner} />
+            </Animated.View>
+          )}
 
           {/* Health Tips */}
           {!isPremium && (
@@ -282,5 +290,8 @@ const styles = StyleSheet.create({
   },
   tipButton: {
     alignSelf: 'flex-start',
+  },
+  adBanner: {
+    marginVertical: Spacing.lg,
   },
 });
