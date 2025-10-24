@@ -263,5 +263,20 @@ export const Fonts = Platform.select({
   },
 });
 
+// Unified theme object for easy access
+export const theme = {
+  colors: Colors,
+  spacing: Spacing,
+  borderRadius: BorderRadius,
+  typography: {
+    sizes: Typography.fontSize,
+    weights: Typography.fontWeight,
+    lineHeight: Typography.lineHeight,
+  },
+  shadows: Shadows,
+  animations: Animations,
+  fonts: Fonts,
+};
+
 export type Theme = typeof Colors.light;
 export type ColorScheme = 'light' | 'dark';
