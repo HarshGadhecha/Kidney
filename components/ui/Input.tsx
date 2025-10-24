@@ -21,6 +21,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useColorScheme } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import {
   Colors,
   Spacing,
@@ -32,8 +33,8 @@ interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
   helperText?: string;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
+  leftIcon?: React.ReactNode | string;
+  rightIcon?: React.ReactNode | string;
   onRightIconPress?: () => void;
   containerStyle?: StyleProp<ViewStyle>;
   inputStyle?: StyleProp<TextStyle>;
@@ -107,6 +108,14 @@ export function Input({
     return colors.textSecondary;
   };
 
+  const renderIcon = (icon: React.ReactNode | string | undefined, defaultColor: string) => {
+    if (!icon) return null;
+    if (typeof icon === 'string') {
+      return <Ionicons name={icon as any} size={20} color={defaultColor} />;
+    }
+    return icon;
+  };
+
   return (
     <View style={[styles.container, containerStyle]}>
       {label && (
@@ -145,7 +154,7 @@ export function Input({
           multiline && styles.inputContainerMultiline,
         ]}
       >
-        {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
+        {leftIcon && <View style={styles.leftIcon}>{renderIcon(leftIcon, colors.textSecondary)}</View>}
 
         <TextInput
           style={[
@@ -171,7 +180,7 @@ export function Input({
             onPress={onRightIconPress}
             disabled={!onRightIconPress}
           >
-            {rightIcon}
+            {renderIcon(rightIcon, colors.textSecondary)}
           </TouchableOpacity>
         )}
       </Animated.View>
