@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { theme } from '@/constants/theme';
-import { signIn } from '@/services/auth/authService';
+import { signIn, signInWithGoogle, signInWithApple } from '@/services/auth/authService';
 import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Alert,
+  Dimensions,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -18,6 +19,8 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+
+const { height } = Dimensions.get('window');
 
 export default function LoginScreen() {
   const colorScheme = useColorScheme();
@@ -44,6 +47,42 @@ export default function LoginScreen() {
         await signInUser(response.user, response.token);
 
         // Navigate to main app
+        router.replace('/(tabs)');
+      } else {
+        Alert.alert('Login Failed', response.message);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      const response = await signInWithGoogle();
+
+      if (response.success && response.user && response.token) {
+        await signInUser(response.user, response.token);
+        router.replace('/(tabs)');
+      } else {
+        Alert.alert('Login Failed', response.message);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setLoading(true);
+    try {
+      const response = await signInWithApple();
+
+      if (response.success && response.user && response.token) {
+        await signInUser(response.user, response.token);
         router.replace('/(tabs)');
       } else {
         Alert.alert('Login Failed', response.message);
@@ -124,6 +163,36 @@ export default function LoginScreen() {
                 Login
               </Button>
 
+              {/* Divider */}
+              <View style={styles.dividerContainer}>
+                <View style={styles.divider} />
+                <Text style={styles.dividerText}>or continue with</Text>
+                <View style={styles.divider} />
+              </View>
+
+              {/* OAuth Buttons */}
+              <View style={styles.oauthContainer}>
+                <TouchableOpacity
+                  style={styles.oauthButton}
+                  onPress={handleGoogleSignIn}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="logo-google" size={24} color="#fff" />
+                  <Text style={styles.oauthButtonText}>Google</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.oauthButton}
+                  onPress={handleAppleSignIn}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="logo-apple" size={24} color="#fff" />
+                  <Text style={styles.oauthButtonText}>Apple</Text>
+                </TouchableOpacity>
+              </View>
+
               {/* Links */}
               <View style={styles.linksContainer}>
                 <Text style={styles.linkText}>
@@ -202,6 +271,45 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     marginTop: theme.spacing.md,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: theme.spacing.lg,
+    width: '100%',
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  dividerText: {
+    fontSize: theme.typography.sizes.xs,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginHorizontal: theme.spacing.md,
+    fontWeight: theme.typography.weights.medium as any,
+  },
+  oauthContainer: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    width: '100%',
+  },
+  oauthButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: height < 700 ? 48 : 56,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    gap: theme.spacing.xs,
+  },
+  oauthButtonText: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.semibold as any,
+    color: '#fff',
   },
   linksContainer: {
     marginTop: theme.spacing.xl,
