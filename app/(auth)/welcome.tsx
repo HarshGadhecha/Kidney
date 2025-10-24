@@ -1,25 +1,33 @@
+import { Button } from '@/components/ui/Button';
+import { theme } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import React, { useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
   Dimensions,
+  FlatList,
+  StyleSheet,
+  Text,
   useColorScheme,
+  View,
 } from 'react-native';
-import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
-  useSharedValue,
   useAnimatedStyle,
-  withSpring,
+  useSharedValue,
   withRepeat,
   withSequence,
+  withSpring,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { theme } from '@/constants/theme';
-import { Button } from '@/components/ui/Button';
 
 const { width, height } = Dimensions.get('window');
+
+const FEATURES = [
+  { id: '1', icon: 'fitness', text: 'Track your vitals daily' },
+  { id: '2', icon: 'flask', text: 'Monitor lab results' },
+  { id: '3', icon: 'medical', text: 'Manage medications' },
+  { id: '4', icon: 'restaurant', text: 'Log your nutrition' },
+];
 
 export default function WelcomeScreen() {
   const colorScheme = useColorScheme();
@@ -48,6 +56,14 @@ export default function WelcomeScreen() {
     opacity: opacity.value,
   }));
 
+  const renderFeature = ({ item, index }: { item: typeof FEATURES[0], index: number }) => (
+    <FeatureItem
+      icon={item.icon as keyof typeof Ionicons.glyphMap}
+      text={item.text}
+      delay={(index + 1) * 100}
+    />
+  );
+
   return (
     <LinearGradient
       colors={[colors.primary, colors.secondary]}
@@ -57,7 +73,7 @@ export default function WelcomeScreen() {
         {/* App Icon */}
         <Animated.View style={[styles.iconContainer, iconAnimatedStyle]}>
           <View style={styles.iconBackground}>
-            <Ionicons name="water" size={80} color="#fff" />
+            <Ionicons name="water" size={height < 700 ? 60 : 80} color="#fff" />
           </View>
         </Animated.View>
 
@@ -67,27 +83,17 @@ export default function WelcomeScreen() {
           Your Personal Health Companion
         </Text>
 
-        {/* Features */}
-        <View style={styles.features}>
-          <FeatureItem
-            icon="fitness"
-            text="Track your vitals daily"
-            delay={100}
-          />
-          <FeatureItem
-            icon="flask"
-            text="Monitor lab results"
-            delay={200}
-          />
-          <FeatureItem
-            icon="medical"
-            text="Manage medications"
-            delay={300}
-          />
-          <FeatureItem
-            icon="restaurant"
-            text="Log your nutrition"
-            delay={400}
+        {/* Features - Horizontal FlatList */}
+        <View style={styles.featuresContainer}>
+          <FlatList
+            data={FEATURES}
+            renderItem={renderFeature}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.featuresContent}
+            snapToInterval={width * 0.7 + theme.spacing.md}
+            decelerationRate="fast"
           />
         </View>
 
@@ -127,25 +133,25 @@ interface FeatureItemProps {
 }
 
 function FeatureItem({ icon, text, delay }: FeatureItemProps) {
-  const translateX = useSharedValue(-50);
+  const translateY = useSharedValue(50);
   const opacity = useSharedValue(0);
 
   useEffect(() => {
     setTimeout(() => {
-      translateX.value = withSpring(0);
+      translateY.value = withSpring(0);
       opacity.value = withSpring(1);
     }, delay);
   }, [delay]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
+    transform: [{ translateY: translateY.value }],
     opacity: opacity.value,
   }));
 
   return (
     <Animated.View style={[styles.featureItem, animatedStyle]}>
-      <View style={styles.featureIcon}>
-        <Ionicons name={icon} size={24} color="#fff" />
+      <View style={styles.featureIconLarge}>
+        <Ionicons name={icon} size={height < 700 ? 28 : 32} color="#fff" />
       </View>
       <Text style={styles.featureText}>{text}</Text>
     </Animated.View>
@@ -160,15 +166,15 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.lg,
   },
   iconContainer: {
-    marginBottom: theme.spacing.xl,
+    marginBottom: height < 700 ? theme.spacing.lg : theme.spacing.xl,
   },
   iconBackground: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: height < 700 ? 100 : 140,
+    height: height < 700 ? 100 : 140,
+    borderRadius: height < 700 ? 50 : 70,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -176,57 +182,64 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   title: {
-    fontSize: theme.typography.sizes['3xl'],
+    fontSize: height < 700 ? theme.typography.sizes['2xl'] : theme.typography.sizes['3xl'],
     fontWeight: theme.typography.weights.bold as any,
     color: '#fff',
     marginBottom: theme.spacing.xs,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: theme.typography.sizes.lg,
+    fontSize: height < 700 ? theme.typography.sizes.sm : theme.typography.sizes.base,
     fontWeight: theme.typography.weights.medium as any,
     color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: theme.spacing.xxl,
+    marginBottom: height < 700 ? theme.spacing.lg : theme.spacing.xxl,
     textAlign: 'center',
+    paddingHorizontal: theme.spacing.lg,
   },
-  features: {
-    width: '100%',
-    marginBottom: theme.spacing.xxl,
+  featuresContainer: {
+    height: height < 700 ? 140 : 160,
+    marginBottom: height < 700 ? theme.spacing.lg : theme.spacing.xxl,
+  },
+  featuresContent: {
+    paddingHorizontal: theme.spacing.lg,
   },
   featureItem: {
-    flexDirection: 'row',
+    width: width * 0.7,
     alignItems: 'center',
-    marginBottom: theme.spacing.lg,
+    marginRight: theme.spacing.md,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.xl,
   },
-  featureIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  featureIconLarge: {
+    width: height < 700 ? 56 : 64,
+    height: height < 700 ? 56 : 64,
+    borderRadius: height < 700 ? 28 : 32,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: theme.spacing.md,
+    marginBottom: theme.spacing.md,
   },
   featureText: {
-    fontSize: theme.typography.sizes.md,
+    fontSize: height < 700 ? theme.typography.sizes.sm : theme.typography.sizes.base,
     fontWeight: theme.typography.weights.medium as any,
     color: '#fff',
-    flex: 1,
+    textAlign: 'center',
   },
   buttonsContainer: {
     width: '100%',
-    gap: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    gap: height < 700 ? theme.spacing.sm : theme.spacing.md,
   },
   button: {
     width: '100%',
+    height: height < 700 ? 48 : undefined,
   },
   footer: {
-    marginTop: theme.spacing.xl,
+    marginTop: height < 700 ? theme.spacing.md : theme.spacing.xl,
     fontSize: theme.typography.sizes.sm,
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
+    paddingHorizontal: theme.spacing.lg,
   },
 });

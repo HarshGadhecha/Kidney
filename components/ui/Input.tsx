@@ -3,29 +3,29 @@
  * Text input with floating label, validation, and icons
  */
 
-import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  TextInput,
-  Text,
-  StyleSheet,
-  ViewStyle,
-  TextStyle,
   StyleProp,
+  StyleSheet,
+  Text,
+  TextInput,
   TextInputProps,
+  TextStyle,
   TouchableOpacity,
+  useColorScheme,
+  View,
+  ViewStyle,
 } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { useColorScheme } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import {
+  BorderRadius,
   Colors,
   Spacing,
-  BorderRadius,
   Typography,
 } from '../../constants/theme';
 
@@ -38,8 +38,6 @@ interface InputProps extends TextInputProps {
   onRightIconPress?: () => void;
   containerStyle?: StyleProp<ViewStyle>;
   inputStyle?: StyleProp<TextStyle>;
-  multiline?: boolean;
-  numberOfLines?: number;
 }
 
 export function Input({
@@ -56,7 +54,8 @@ export function Input({
   onBlur,
   multiline = false,
   numberOfLines = 1,
-  ...props
+  placeholder,
+  ...restProps
 }: InputProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme || 'light'];
@@ -67,15 +66,28 @@ export function Input({
 
   const hasValue = value && value.length > 0;
 
+  // Update label position when value changes
+  useEffect(() => {
+    labelPosition.value = hasValue ? 1 : (isFocused ? 1 : 0);
+  }, [hasValue, isFocused]);
+
+  // Calculate label offset based on icon presence
+  const labelLeftOffset = leftIcon ? 40 : Spacing.md;
+
   const labelAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
       {
-        translateY: withTiming(labelPosition.value === 1 ? -24 : 0, {
+        translateY: withTiming(labelPosition.value === 1 ? -28 : 0, {
           duration: 200,
         }),
       },
       {
         scale: withTiming(labelPosition.value === 1 ? 0.85 : 1, {
+          duration: 200,
+        }),
+      },
+      {
+        translateX: withTiming(labelPosition.value === 1 ? -4 : 0, {
           duration: 200,
         }),
       },
@@ -116,14 +128,24 @@ export function Input({
     return icon;
   };
 
+  // Use label as placeholder when not focused and no value
+  const displayPlaceholder = !label && placeholder ? placeholder :
+    (!isFocused && !hasValue && label) ? '' :
+      (isFocused && !hasValue) ? placeholder || '' : '';
+
   return (
     <View style={[styles.container, containerStyle]}>
       {label && (
         <Animated.View
           style={[
             styles.labelContainer,
+            { left: labelLeftOffset },
             labelAnimatedStyle,
-            (isFocused || hasValue) && styles.labelContainerFloating,
+            {
+              backgroundColor: (isFocused || hasValue)
+                ? colorScheme === 'dark' ? colors.background : '#FFFFFF'
+                : 'transparent',
+            },
           ]}
           pointerEvents="none"
         >
@@ -157,6 +179,7 @@ export function Input({
         {leftIcon && <View style={styles.leftIcon}>{renderIcon(leftIcon, colors.textSecondary)}</View>}
 
         <TextInput
+          {...restProps}
           style={[
             styles.input,
             { color: colors.text },
@@ -168,10 +191,10 @@ export function Input({
           value={value}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          placeholder={displayPlaceholder}
           placeholderTextColor={colors.placeholder}
           multiline={multiline}
           numberOfLines={numberOfLines}
-          {...props}
         />
 
         {rightIcon && (
@@ -209,17 +232,12 @@ const styles = StyleSheet.create({
   },
   labelContainer: {
     position: 'absolute',
-    left: Spacing.md,
-    top: 16,
+    top: 18,
     zIndex: 1,
-    backgroundColor: 'transparent',
-    paddingHorizontal: Spacing.xs,
-  },
-  labelContainerFloating: {
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 4,
   },
   label: {
-    fontSize: Typography.fontSize.base,
+    fontSize: Typography.fontSize.md,
     fontWeight: Typography.fontWeight.regular,
   },
   labelFloating: {
@@ -241,7 +259,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: Typography.fontSize.base,
+    fontSize: Typography.fontSize.md,
     fontWeight: Typography.fontWeight.regular,
     paddingVertical: Spacing.sm,
   },
