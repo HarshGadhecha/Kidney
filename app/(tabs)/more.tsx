@@ -4,10 +4,12 @@
  */
 
 import React from 'react';
-import { View, ScrollView, StyleSheet, Text, useColorScheme } from 'react-native';
+import { View, ScrollView, StyleSheet, Text, useColorScheme, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { Colors, Spacing, Typography } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -15,7 +17,25 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 export default function MoreScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme || 'light'];
-  const { user, isPremium } = useAuthStore();
+  const { user, isPremium, signOut } = useAuthStore();
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            await signOut();
+            router.replace('/(auth)/welcome');
+          },
+        },
+      ]
+    );
+  };
 
   const menuItems = [
     { label: 'Profile', icon: 'person.circle', route: '/profile' },
@@ -80,6 +100,17 @@ export default function MoreScreen() {
             </Card>
           ))}
         </View>
+
+        {/* Logout Button */}
+        <Button
+          onPress={handleLogout}
+          variant="outline"
+          size="lg"
+          leftIcon="log-out"
+          style={styles.logoutButton}
+        >
+          Logout
+        </Button>
 
         {/* Version */}
         <Text style={[styles.version, { color: colors.textTertiary }]}>
@@ -161,6 +192,9 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.medium,
     marginLeft: Spacing.md,
+  },
+  logoutButton: {
+    marginBottom: Spacing.lg,
   },
   version: {
     fontSize: Typography.fontSize.sm,
