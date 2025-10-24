@@ -1,5 +1,6 @@
-import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
+import { signInWithApple, signInWithGoogle } from '@/services/auth/authService';
+import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -21,8 +22,6 @@ import Animated, {
   withSequence,
   withSpring,
 } from 'react-native-reanimated';
-import { signInWithGoogle, signInWithApple } from '@/services/auth/authService';
-import { useAuthStore } from '@/store/authStore';
 
 const { width, height } = Dimensions.get('window');
 
@@ -165,21 +164,21 @@ export default function WelcomeScreen() {
           </TouchableOpacity>
 
           {/* Divider */}
-          <View style={styles.dividerContainer}>
+          {/* <View style={styles.dividerContainer}>
             <View style={styles.divider} />
             <Text style={styles.dividerText}>or</Text>
             <View style={styles.divider} />
-          </View>
+          </View> */}
 
           {/* Create Account Button */}
-          <Button
+          {/* <Button
             onPress={() => router.push('/(auth)/signup')}
             variant="secondary"
             size="lg"
             style={styles.button}
           >
             Create Account
-          </Button>
+          </Button> */}
         </View>
 
         {/* Footer */}
