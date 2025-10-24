@@ -1,5 +1,10 @@
 import { database } from '@/lib/database';
 import * as Crypto from 'expo-crypto';
+import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
+import { Platform } from 'react-native';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export interface LoginCredentials {
   email: string;
@@ -25,6 +30,19 @@ export interface AuthResponse {
   };
   token?: string;
 }
+
+// OAuth Configuration
+// Note: Replace these with your actual OAuth client IDs
+const GOOGLE_CLIENT_ID = Platform.select({
+  ios: 'YOUR_GOOGLE_IOS_CLIENT_ID',
+  android: 'YOUR_GOOGLE_ANDROID_CLIENT_ID',
+  default: 'YOUR_GOOGLE_WEB_CLIENT_ID',
+});
+
+const redirectUri = AuthSession.makeRedirectUri({
+  scheme: 'kidney',
+  path: 'auth/callback',
+});
 
 /**
  * Hash password using SHA256
@@ -378,6 +396,227 @@ export async function changePassword(
     return {
       success: false,
       message: 'Failed to change password',
+    };
+  }
+}
+
+/**
+ * Handle OAuth user - create or login
+ */
+async function handleOAuthUser(
+  email: string,
+  name: string,
+  providerId: string,
+  provider: 'google' | 'apple'
+): Promise<AuthResponse> {
+  try {
+    const db = database.getDatabase();
+
+    // Check if user exists
+    let user = await db.getFirstAsync<any>(
+      'SELECT id, name, email, role FROM users WHERE email = ?',
+      [email.toLowerCase()]
+    );
+
+    if (user) {
+      // User exists, log them in
+      const subscription = await db.getFirstAsync<any>(
+        `SELECT * FROM subscriptions
+         WHERE user_id = ?
+         AND status = 'active'
+         AND end_date > datetime('now')
+         ORDER BY end_date DESC
+         LIMIT 1`,
+        [user.id]
+      );
+
+      const isPremium = !!subscription;
+      const token = await generateToken();
+
+      return {
+        success: true,
+        message: 'Login successful',
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isPremium,
+        },
+        token,
+      };
+    } else {
+      // Create new user
+      const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const token = await generateToken();
+
+      await db.runAsync(
+        `INSERT INTO users (
+          id, name, email, password_hash, role,
+          created_at, updated_at, synced
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          userId,
+          name.trim(),
+          email.toLowerCase(),
+          `${provider}_${providerId}`, // Use OAuth provider ID as password hash
+          'patient',
+          new Date().toISOString(),
+          new Date().toISOString(),
+          0,
+        ]
+      );
+
+      user = await db.getFirstAsync<any>(
+        'SELECT id, name, email, role FROM users WHERE id = ?',
+        [userId]
+      );
+
+      if (!user) {
+        return {
+          success: false,
+          message: 'Failed to create user account',
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Account created successfully',
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isPremium: false,
+        },
+        token,
+      };
+    }
+  } catch (error) {
+    console.error('OAuth user handling error:', error);
+    return {
+      success: false,
+      message: 'An error occurred during authentication. Please try again.',
+    };
+  }
+}
+
+/**
+ * Sign in with Google OAuth
+ */
+export async function signInWithGoogle(): Promise<AuthResponse> {
+  try {
+    const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
+
+    // Note: This is a placeholder implementation
+    // In production, you'll need to set up Google OAuth properly
+    // For now, we'll return a message to configure OAuth
+    return {
+      success: false,
+      message: 'Google OAuth needs to be configured with client IDs in authService.ts',
+    };
+
+    // Uncomment and configure when OAuth is set up:
+    /*
+    const [request, response, promptAsync] = AuthSession.useAuthRequest(
+      {
+        clientId: GOOGLE_CLIENT_ID!,
+        scopes: ['openid', 'profile', 'email'],
+        redirectUri,
+      },
+      discovery
+    );
+
+    if (!request) {
+      return {
+        success: false,
+        message: 'Failed to create authentication request',
+      };
+    }
+
+    const result = await promptAsync();
+
+    if (result.type === 'success') {
+      const { access_token } = result.params;
+
+      // Fetch user info from Google
+      const userInfoResponse = await fetch(
+        'https://www.googleapis.com/oauth2/v3/userinfo',
+        {
+          headers: { Authorization: `Bearer ${access_token}` },
+        }
+      );
+
+      const userInfo = await userInfoResponse.json();
+
+      return await handleOAuthUser(
+        userInfo.email,
+        userInfo.name,
+        userInfo.sub,
+        'google'
+      );
+    }
+
+    return {
+      success: false,
+      message: 'Google sign-in was cancelled',
+    };
+    */
+  } catch (error) {
+    console.error('Google sign-in error:', error);
+    return {
+      success: false,
+      message: 'An error occurred during Google sign-in. Please try again.',
+    };
+  }
+}
+
+/**
+ * Sign in with Apple OAuth
+ */
+export async function signInWithApple(): Promise<AuthResponse> {
+  try {
+    // Apple Sign-In is only available on iOS
+    if (Platform.OS !== 'ios') {
+      return {
+        success: false,
+        message: 'Apple Sign-In is only available on iOS devices',
+      };
+    }
+
+    // Note: This requires additional setup with Apple Developer account
+    // and expo-apple-authentication package for native implementation
+    return {
+      success: false,
+      message: 'Apple OAuth needs to be configured. Install expo-apple-authentication for native iOS support.',
+    };
+
+    // For native Apple Sign-In, you would use:
+    /*
+    import * as AppleAuthentication from 'expo-apple-authentication';
+
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+
+    const { email, fullName, user } = credential;
+    const name = fullName ? `${fullName.givenName} ${fullName.familyName}` : 'Apple User';
+
+    return await handleOAuthUser(
+      email!,
+      name,
+      user,
+      'apple'
+    );
+    */
+  } catch (error) {
+    console.error('Apple sign-in error:', error);
+    return {
+      success: false,
+      message: 'An error occurred during Apple sign-in. Please try again.',
     };
   }
 }
