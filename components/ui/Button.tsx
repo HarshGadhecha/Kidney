@@ -30,7 +30,8 @@ import {
 } from '../../constants/theme';
 
 interface ButtonProps {
-  title: string;
+  title?: string;
+  children?: React.ReactNode;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
@@ -48,6 +49,7 @@ const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 export function Button({
   title,
+  children,
   onPress,
   variant = 'primary',
   size = 'md',
@@ -210,7 +212,7 @@ export function Button({
           {icon && iconPosition === 'left' && (
             <View style={styles.iconLeft}>{icon}</View>
           )}
-          <Text style={buttonTextStyle}>{title}</Text>
+          <Text style={buttonTextStyle}>{children || title}</Text>
           {icon && iconPosition === 'right' && (
             <View style={styles.iconRight}>{icon}</View>
           )}
